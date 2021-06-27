@@ -2,10 +2,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <string.h>
 
 pthread_mutex_t *mutexes;
-bool debug_programa = false;
 float *x, *y, *z;
 
 typedef struct {
@@ -49,7 +48,29 @@ void *preencheVetores(void *argPtr) {
     return NULL;
 }
 
-int main(void) {
+void verificarVetores(int tamanhoVetores) {
+    for (int i = 0; i < tamanhoVetores; i++) {
+        if (x[i] == 0) {
+            printf("Valor 0 em X");
+            break;
+        }
+        if (y[i] == 0) {
+            printf("Valor 0 em Y");
+            break;
+        }
+        if (z[i] == 0) {
+            printf("Valor 0 em Z");
+            break;
+        }
+
+        if (x[i] + y[i] != z[i]) {
+            printf("A soma não está correta");
+            break;
+        }
+    }
+}
+
+int main(int argc, char **argv) {
     int n_threads, tam_vetores;
 
     // Pega input usuário
@@ -92,12 +113,15 @@ int main(void) {
         pthread_mutex_init(&mutexes[i], NULL);
     }
 
+    for (int i = 0; i < n_threads; i++) {
+        printf("A thread %u processará os elementos dos vetores nas posições de %u a %u\n", i,
+               argPreenche[i].posInicial, argPreenche[i].posFinal - 1);
+    }
+
     clock_t begin = clock();
     // preenche x
     for (int i = 0; i < n_threads; i++) {
         argPreenche[i].vetor = x;
-        printf("A thread %u processará os elementos dos vetores nas posições de %u a %u\n", i,
-               argPreenche[i].posInicial, argPreenche[i].posFinal - 1);
         pthread_create(&(threads[i]), NULL, preencheVetores, &argPreenche[i]);
     }
 
@@ -124,10 +148,17 @@ int main(void) {
     double time_spent = (double) (end - begin) / CLOCKS_PER_SEC / n_threads;
     printf("Tempo decorrido: %f segundos\n", time_spent);
 
-    if (debug_programa) {
-        for (int i = 0; i < tam_vetores; i++) {
-            printf("[%i]    %f    %f    %f    %s\n", i, x[i], y[i], z[i], (x[i] + y[i] == z[i]) ? "true" : "false");
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--check") == 0) {
+            verificarVetores(tam_vetores);
+        }
+
+        if (strcmp(argv[i], "--debug") == 0) {
+            for (int i = 0; i < tam_vetores; i++) {
+                printf("[%i]    %f    %f    %f    %s\n", i, x[i], y[i], z[i], (x[i] + y[i] == z[i]) ? "true" : "false");
+            }
         }
     }
+
     return 0;
 }
